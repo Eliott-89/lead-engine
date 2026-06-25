@@ -5,7 +5,7 @@ description: >
   builds your ideal customer profile, finds matching leads, and sends outreach
   automatically on a daily schedule. Use when the user wants to find B2B leads,
   automate prospecting, build an outbound pipeline, generate qualified contacts,
-  or send connection requests at scale.
+  or reach decision-makers at scale.
 ---
 
 # Lead Engine
@@ -20,8 +20,6 @@ Follow phases in strict order. Never skip the demo. Never ask for tool setup bef
 ---
 
 ## PHASE 0 — Quick Start (Demo, no tools required)
-
-This phase runs with zero setup. No API keys, no payment, no connectors needed.
 
 When the user runs `/lead-engine [URL or description]`:
 
@@ -68,7 +66,7 @@ IDEAL CUSTOMER PROFILE
 ═══════════════════════════════════════════
 
 TARGET COMPANY
-  Industry: [specific verticals — DataForB2B exact names]
+  Industry: [specific verticals]
   Size: [X–Y employees]
   Stage: [pre-seed / seed / series-a / series-b / growth]
   Geography: [country codes: FR, CA, ES, NL, etc.]
@@ -120,7 +118,7 @@ Say: **"Your ICP is locked in. To find real matching leads, I need two tools con
 ### Step 2 — LinkupAPI
 
 > 1. Create an account at **[linkupapi.com](https://linkupapi.com)** → choose a plan
-> 2. In your dashboard → **Accounts → Add Account** → connect your LinkedIn account → wait for status **"Active"**
+> 2. In your dashboard → **Accounts → Add Account** → connect your outreach account → wait for status **"Active"**
 > 3. Copy your **MCP link** → Claude **Settings > Connectors** → paste → **Connect**
 
 ### Step 3 — Verify connection
@@ -141,45 +139,57 @@ Do not proceed to Phase 3 until both tools are verified.
 
 ## PHASE 3 — Lead Discovery (DataForB2B)
 
-### Step 3A — ICP → Filter Mapping
+### Step 3A — Typeahead Resolution
 
-Before searching, translate every ICP field into exact DataForB2B filter parameters. Show the mapping to the user so they can validate it before any credits are spent.
+Before building filters, use the DataForB2B `typeahead` tool to resolve exact stored values for the ICP's industry, company industry (people), and city fields. This ensures filters match real database values and avoids zero-result searches.
+
+Run these typeahead lookups silently (don't narrate them):
+
+```
+typeahead(type: "company_industry", query: [ICP industry keyword])
+typeahead(type: "people_industry", query: [ICP industry keyword])
+typeahead(type: "city", query: [ICP geography city if relevant])
+```
+
+Use the returned exact values in all subsequent filters.
+
+---
+
+### Step 3B — ICP → Filter Mapping
+
+Translate every ICP field into exact DataForB2B filter parameters using the typeahead-resolved values. Show the mapping to the user before any credits are spent.
 
 #### COMPANY SEARCH filter mapping
 
 | ICP Field | DataForB2B Column | Operator | Notes |
 |-----------|-------------------|----------|-------|
-| Industry | `industry` | `like` or `in` | **Always lowercase** (e.g., "software development", "information technology and internet"). Never use capitalized forms here. |
-| Employee size | `employee_count` | `between` | **Never use `in`** — causes size overflow. Always `between` with min and max values. |
-| Geography | `country_iso_code` | `in` | ISO-2 uppercase (FR, CA, ES, NL, CH, BE, PL, PT) |
+| Industry | `industry` | `like` or `in` | **Always lowercase** — use typeahead-resolved values |
+| Employee size | `employee_count` | `between` | **Never use `in`** — always `between` with min/max |
+| Geography | `country_iso_code` | `in` | ISO-2 uppercase (FR, CA, ES, NL, CH, BE) |
 | Has funding | `has_funding` | `=` | true/false |
-| Funding stage | `funding_stage_normalized` | `in` | Values: pre_seed_round, seed_round, series_a, series_b, series_c. Use both forms: "seed" and "seed_round" for max coverage. |
-| Business model / use case | `keyword` | `like` | Free-text search in name/tagline/description. **Rotate each session** to avoid hitting the same pool. |
-| Company type | `company_type` | `in` | PRIVATELY_HELD, PUBLIC_COMPANY (uppercase snake_case) |
-| Recent growth signal | `employee_growth_6m` | `>` | Use `> 10` to target fast-growing companies |
-| Recent funding signal | `last_funding_date` | `>=` | e.g., "2022-01-01" to target recently funded |
-| Founded after | `founded_year` | `>=` | e.g., 2018 |
+| Funding stage | `funding_stage_normalized` | `in` | pre_seed_round, seed_round, series_a, series_b, series_c |
+| Use case keyword | `keyword` | `like` | Rotate each session — see rotation pool below |
+| Company type | `company_type` | `in` | PRIVATELY_HELD, PUBLIC_COMPANY |
+| Growth signal | `employee_growth_6m` | `>` | e.g. > 10 |
+| Recent funding | `last_funding_date` | `>=` | e.g. "2022-01-01" |
+| Founded after | `founded_year` | `>=` | e.g. 2018 |
 
 #### PEOPLE SEARCH filter mapping
 
 | ICP Field | DataForB2B Column | Operator | Notes |
 |-----------|-------------------|----------|-------|
-| Job title | `current_title` | `like` or `in` | Use `like` for partial match ("Founder" catches "Co-Founder", "Founder & CEO"). Use `in` for exact list. |
-| Department | `current_title` | `like` | e.g., "Head of Engineering", "VP Sales" |
-| Industry (people) | `current_company_industry` | `=` or `in` | **Capitalized** here (e.g., "Computer Software", "Information Technology & Services"). Different from company search. |
-| Company size | `current_company_size` | `in` | Use string ranges: "2-10", "11-50", "51-200", "201-500" |
-| Geography | `profile_country` | `in` | ISO-2 uppercase. Use GB not UK for United Kingdom. |
-| Funding (people) | `current_company_has_funding` | `=` | true/false |
-| Funding stage (people) | `current_company_funding_stage` | `in` | Same values as company: seed_round, series_a, etc. |
-| Years in role | `years_in_current_position` | `between` | e.g., between 0 3 = new in role (buying trigger) |
-| Skills | `skill` | `like` or `in` | e.g., "Python", "Salesforce", "LLM" — use for technical targeting |
-| Language | `language_iso` | `in` | e.g., "fr", "en", "es" — use to match geography |
-| Experience | `years_of_experience` | `between` | e.g., between 3 15 = mid-career decision-makers |
-| Currently employed | `is_currently_employed` | `=` | Always true — skip between jobs |
+| Job title | `current_title` | `like` or `in` | `like` catches partials ("Founder" → "Co-Founder") |
+| Industry (people) | `current_company_industry` | `=` or `in` | **Capitalized** — use typeahead-resolved values |
+| Company size | `current_company_size` | `in` | String ranges: "2-10", "11-50", "51-200", "201-500" |
+| Geography | `profile_country` | `in` | ISO-2. Use GB not UK |
+| Funding | `current_company_has_funding` | `=` | true/false |
+| Funding stage | `current_company_funding_stage` | `in` | seed_round, series_a, etc. |
+| Years in role | `years_in_current_position` | `between` | buying trigger: between 0 3 = new in role |
+| Skills | `skill` | `like` or `in` | technical targeting |
+| Language | `language_iso` | `in` | "fr", "en", "es" |
+| Currently employed | `is_currently_employed` | `=` | Always true |
 
-#### Filter generation output (show this to the user before searching)
-
-After mapping, display the generated filters clearly:
+#### Filter display (show before searching)
 
 ```
 ═══════════════════════════════════════════
@@ -187,20 +197,19 @@ GENERATED SEARCH FILTERS
 ═══════════════════════════════════════════
 
 COMPANY SEARCH
-  industry: like "software development"
-  employee_count: between 5 200
-  country_iso_code: in [FR, CA, ES, NL, CH]
+  industry: like "[typeahead-resolved value]"
+  employee_count: between [X] [Y]
+  country_iso_code: in [XX, XX, XX]
   has_funding: = true
-  funding_stage_normalized: in [pre_seed_round, seed_round, seed, series_a]
-  keyword: like "AI agent" [will rotate each session]
+  funding_stage_normalized: in [pre_seed_round, seed_round, series_a]
+  keyword: like "[today's rotation keyword]"
   founded_year: >= 2018
 
-PEOPLE SEARCH (applied to each company found)
-  current_title: like "Founder" OR like "CTO" OR like "Head of Engineering"
-  current_company_industry: in ["Computer Software", "Information Technology & Services"]
+PEOPLE SEARCH (per company)
+  current_title: like "Founder" OR like "CTO" OR like "Head of Growth"
+  current_company_industry: in ["[typeahead-resolved]"]
   current_company_size: in ["2-10", "11-50", "51-200"]
-  profile_country: in [FR, CA, ES, NL, CH]
-  current_company_has_funding: = true
+  profile_country: in [XX, XX, XX]
   is_currently_employed: = true
 
 KEYWORD ROTATION POOL (one per session):
@@ -212,34 +221,61 @@ KEYWORD ROTATION POOL (one per session):
 ═══════════════════════════════════════════
 ```
 
-Ask: **"These are the filters I'll use to find your leads. Look good, or want to adjust anything?"**
+Ask: **"These are the filters I'll use. Look good, or want to adjust anything?"**
 
 Wait for confirmation before running any search.
 
 ---
 
-### Step 3B — Company Search
+### Step 3C — Multi-Path Search Strategy
 
-Execute the company search with the validated filters. Retrieve up to 30 companies per session (more than 20 to allow for quality filtering).
+Do NOT follow a fixed search order. Iterate across multiple search paths and take the best leads from each. Run all paths silently — only show the final scored lead list.
 
-**Exclusion rule:** After results come in, flag and skip any company whose product description directly overlaps with the user's product (competitor). Do this silently — don't count excluded companies toward the target.
+**Path A — Company first, then people**
+1. Run company search with validated filters → get 30 companies
+2. For each company, run people search filtered by `current_company_id`
+3. Take the highest-seniority match with a profile URL
+
+**Path B — People first, direct search**
+1. Run people search with title + industry + country + funding filters directly
+2. Deduplicate against Path A results (same company = keep highest score)
+
+**Path C — People first with keyword on headline**
+1. Run people search with `keyword` filter on headline (e.g., "AI agent", "outbound automation")
+2. Pull company context from their current role
+3. Deduplicate against A and B
+
+**Iteration rule:**
+- If any path returns fewer than 10 strong leads, try a looser filter variant (wider size range, additional countries, softer keyword)
+- Never run more than 3 iterations on the same path
+- Stop when 20+ qualified leads are scored or all paths exhausted
 
 ---
 
-### Step 3C — Decision-Maker Search
+### Step 3D — Website Qualification
 
-For each qualifying company, find the best-fit decision-maker:
+For every company that scores 🟢 or 🟡, fetch and analyze their website before finalizing the lead.
 
-- Filter by `current_company_id` (use the company `id` from Step 3B — never filter by name, causes false matches)
-- Apply title and seniority filters from the mapping above
-- Pick **1 contact per company** — highest seniority match
-- Require LinkedIn URL — discard profiles without one
+For each company website:
+1. Fetch the homepage (and /about or /product page if available)
+2. Extract: what they actually do, who they sell to, tech signals, messaging language
+3. Check against ICP: does their product/service match the pain point we're solving for?
+4. Flag competitors silently — do not include in final list
+
+Add a "Website verdict" to the scoring:
+```
+Website: ✅ Confirmed fit — [1 sentence: what they do, why they match]
+         ⚠️ Partial fit — [what matches and what doesn't]
+         ❌ Excluded — [reason: competitor / wrong vertical / B2C]
+```
+
+Only leads with ✅ or ⚠️ website verdict proceed to the final list.
 
 ---
 
-### Step 3D — Qualification Scoring
+### Step 3E — Qualification Scoring
 
-Score each profile against the full ICP. Be explicit and granular:
+Score each profile combining API data + website check:
 
 ```
 SCORING CRITERIA (1 point each):
@@ -247,51 +283,50 @@ SCORING CRITERIA (1 point each):
   ✅ Company size within ICP range
   ✅ Country in ICP geography
   ✅ Company funding stage matches ICP stage
-  ✅ LinkedIn URL present and valid
+  ✅ Profile URL present and valid
+  ✅ Website confirms product/market fit with ICP pain point
   ✅ [BONUS] Company shows growth signal (hiring, recent funding)
   ✅ [BONUS] Profile has relevant skills (from ICP "signs of fit")
 ```
 
-**🟢 5-7 points** → Strong fit — include
+**🟢 5-8 points** → Strong fit — include
 **🟡 3-4 points** → Good fit — include
 **🔴 1-2 points** → Weak fit — discard silently
 
-Target: **exactly 20 qualified leads per session — no more, no less.**
-
-Each session uses **one keyword** from the rotation pool. If the keyword returns fewer than 20 qualified leads after scoring, do NOT switch to another keyword in the same session — log what was found, report the shortfall, and use the next keyword in the rotation on the next day's run.
+Target: **exactly 20 qualified leads per session.**
 
 One keyword per day. 20 leads per day. Always.
 
 ---
 
-### Step 3E — Output format
-
-Present each lead as a rich qualification card:
+### Step 3F — Output format
 
 ```
 [#] 👤 [Full Name]
     [Exact Title] @ [Company Name] — [🇫🇷/🇨🇦/🇳🇱 Country]
 
-    Company:  [One-line description of what they do]
+    Company:  [One-line from website — what they actually do]
               [X] employees · [Funding stage] · Founded [year]
-              [Growth signal if available: e.g., "+18% headcount in 6mo"]
+              [Growth signal if available]
 
-    Fit score: 🟢 Strong (6/7) / 🟡 Good (4/7)
+    Website verdict: ✅ [Why they match based on website]
+
+    Fit score: 🟢 Strong (7/8) / 🟡 Good (4/8)
 
     Why they match:
-    → [Criterion 1 they hit — specific and factual]
-    → [Criterion 2 they hit]
+    → [Criterion 1 — specific and factual]
+    → [Criterion 2]
     → [Criterion 3 — pain point connection]
 
-    Their pain point: [1 sentence on the specific friction this product removes for someone in their role]
+    Pain point: [1 sentence on the specific friction this product removes]
 
-    LinkedIn: [full URL]
+    Profile: [full URL]
 ```
 
 After showing all leads:
 > **"Found [N] qualified leads. Want me to reach out to all of them, or remove any first?"**
 
-**Do not proceed to Phase 4 until the user explicitly confirms the list.**
+Do not proceed to Phase 4 until the user explicitly confirms the list.
 
 ---
 
@@ -301,35 +336,34 @@ Before sending any outreach, generate 3 message options and let the user choose.
 
 ### Message generation rules
 
-- Messages sent **only after a connection is accepted** — never with the connection request itself
-- Under 300 characters (LinkedIn DM best practice)
-- Reference a specific detail from the prospect's profile or company
+- Messages sent **only after a connection is accepted** — never with the initial request
+- Under 300 characters
+- Reference a specific detail from the prospect's profile or company website
 - One clear CTA
 - Never use: "I hope this finds you well", "I came across your profile", "synergy", "leverage", "touch base"
+- Never mention the outreach platform by name
 
 ### Generate 3 style options
-
-Draft 3 distinct message styles based on the user's product and ICP pain point:
 
 ```
 OPTION A — Direct & curiosity-driven
 [Short, punchy, leads with the pain point or a bold claim]
 
 OPTION B — Peer-to-peer & warm
-[Conversational, references something specific about their company/role,
-feels like it's from a founder to another founder]
+[Conversational, references something specific from their website/role,
+feels like founder-to-founder]
 
 OPTION C — Value-first
-[Leads with a specific insight or useful stat relevant to their situation,
+[Leads with a specific insight or stat relevant to their situation,
 then offers the product as the solution]
 ```
 
-Apply the `/humanizer` skill to each of the 3 options to remove AI-sounding patterns before showing them to the user.
+Apply the `/humanizer` skill to each option before showing them.
 
-Present all 3 and ask:
-> **"Which message style do you want to use? (A, B, or C) — or want me to mix elements from two of them?"**
+Ask:
+> **"Which message style? (A, B, or C) — or mix elements from two?"**
 
-Save the chosen message template. It will be reused for all future outreach in this pipeline.
+Save the chosen template. It will be reused for all future outreach.
 
 ---
 
@@ -344,25 +378,36 @@ Only run after:
 Send connection requests **without any message**. No note attached.
 
 For each approved profile:
-1. Extract LinkedIn URL
-2. Send connection request via LinkupAPI (action: `invite`, no `message` param)
-3. Log: name, company, LinkedIn URL, date sent, status = "pending"
-4. Stop immediately if LinkupAPI returns a checkpoint — notify user
+1. Extract profile URL
+2. Send connection request via LinkupAPI (`invite` action, no `message` param)
+3. Immediately register the profile in a LinkupAPI webhook for connection monitoring (see Step 5B)
+4. Log: name, company, profile URL, date sent, status = "pending"
+5. Stop immediately if LinkupAPI returns a checkpoint — notify user
 
-Daily cap: **20 connection requests maximum**.
+Daily cap: **20 connection requests maximum.**
+
+### Step 5B — Webhook Monitoring Setup
+
+After each successful invite, add the profile to a LinkupAPI webhook to detect when the connection is accepted:
+
+1. Check if a monitoring webhook already exists (`linkupapi_list_webhooks`)
+2. If not, create one (`linkupapi_create_webhook`) with event type `connection_accepted`
+3. Start the webhook if not already running (`linkupapi_start_webhook`)
+4. Each new invitee is automatically monitored — no manual checking needed
+
+When a `connection_accepted` event fires → trigger Phase 7 (message sending) automatically.
 
 ### After sending
 
 ```
-✅ Sent [N] connection requests
+✅ Sent [N] connection requests — monitoring active
 
-Leads contacted:
-- [Name] @ [Company] — [LinkedIn URL]
+Pipeline:
+- [Name] @ [Company] — [Profile URL] — ⏳ pending
 - ...
 
-⏳ Next: when a connection is accepted, I'll send your chosen message automatically.
-
-→ Come back tomorrow or set up auto-scheduling below to run this daily.
+→ You'll be notified automatically when a connection accepts.
+  Message will be sent after your approval.
 ```
 
 ---
@@ -373,7 +418,7 @@ After Phase 5, append all sent leads to `leads.csv` in the current directory.
 
 Columns:
 ```
-Date | Name | Title | Company | Country | LinkedIn URL | Fit Score | ICP Match Reason | Status | Message Sent
+Date | Name | Title | Company | Country | Profile URL | Fit Score | Website Verdict | ICP Match Reason | Status | Message Sent
 ```
 
 - Status = "Connection Sent"
@@ -381,17 +426,15 @@ Date | Name | Title | Company | Country | LinkedIn URL | Fit Score | ICP Match R
 
 If file doesn't exist: create it with headers first.
 
-Confirm: **"[N] leads saved to leads.csv — open in Excel or Google Sheets to track your pipeline."**
-
 ---
 
 ## PHASE 7 — Message Sending (after connection accepted)
 
-When a connection is accepted (via LinkupAPI webhook or manual check):
+Triggered automatically by webhook event OR manually by user:
 
-1. Pull prospect context: name, title, company
+1. Pull prospect context: name, title, company, website summary
 2. Load saved message template (from Phase 4)
-3. Personalize: replace [Name], [Company], any dynamic tokens
+3. Personalize: replace [Name], [Company], any dynamic tokens — reference website detail if available
 4. Show the final message to the user for approval
 5. Send via LinkupAPI DM once approved
 6. Update `leads.csv`: Status = "Message Sent", log date
@@ -403,16 +446,13 @@ When a connection is accepted (via LinkupAPI webhook or manual check):
 After the first successful run, offer to automate everything.
 
 Say:
-> **"Want this to run automatically every morning? I'll set up a scheduled task that finds 20 new leads, sends connection requests, and logs everything — while you sleep."**
+> **"Want this to run automatically every morning? I'll set up a scheduled task that finds 20 new leads, adds them to your pipeline, and logs everything — while you sleep."**
 
 If yes, create a scheduled task in Cowork:
 - **Schedule:** Monday–Friday, 9:00 AM
 - **Task:** Run the full pipeline (Phase 3 → Phase 5 → Phase 6) using the saved ICP and message template
 - **Cap:** 20 connection requests/day
 - **Stop condition:** LinkupAPI checkpoint detected
-
-Confirm:
-> **"✅ Automation active. Lead Engine will run every weekday at 9am. You'll get a summary each morning with the new leads contacted."**
 
 ---
 
@@ -422,7 +462,7 @@ Confirm:
 Morning (2 min):
 → Review the daily summary in Claude
 → Check leads.csv for new accepted connections
-→ Approve and send prospecting messages to new connections
+→ Approve and send outreach messages to new connections
 
 Weekly (5 min):
 → Run /lead-engine to refresh ICP or adjust targeting
@@ -433,11 +473,11 @@ Weekly (5 min):
 
 ## SAFETY RULES
 
-Remind the user whenever sending outreach:
 - Cap: 20 connection requests/day maximum — never exceed
-- Never send two sessions on the same day
-- Stop immediately on LinkupAPI checkpoint/CAPTCHA — wait 24h
+- Never run two sessions on the same day
+- Stop immediately on LinkupAPI checkpoint — wait 24h
 - Connection requests go out without any message — message only after acceptance
+- Always show leads and message to user for approval before any action
 
 ---
 
@@ -445,7 +485,7 @@ Remind the user whenever sending outreach:
 
 Use this skill when the user says:
 - "find me leads", "find prospects", "build my pipeline", "generate leads"
-- "automate my outreach", "send connection requests at scale"
+- "automate my outreach", "reach decision-makers at scale"
 - "who should I target", "define my ICP", "create my customer profile"
 - "I want to do outbound", "find B2B contacts", "prospect for me"
 - "set up lead gen", "daily prospecting", "automate my sales"
