@@ -141,73 +141,151 @@ Do not proceed to Phase 3 until both tools are verified.
 
 ## PHASE 3 — Lead Discovery (DataForB2B)
 
-Use the validated ICP to find real leads. Apply the company-first search strategy.
+### Step 3A — ICP → Filter Mapping
 
-### Search strategy
+Before searching, translate every ICP field into exact DataForB2B filter parameters. Show the mapping to the user so they can validate it before any credits are spent.
 
-**Step 1 — Find target companies**
+#### COMPANY SEARCH filter mapping
 
-```
-Filters:
-- keyword: [use case keywords from ICP — rotate each session]
-- employee_count: between [ICP min] [ICP max]
-- has_funding: true (if in ICP)
-- country_iso_code: in [ICP geography]
-- founded_after: 2018
-```
+| ICP Field | DataForB2B Column | Operator | Notes |
+|-----------|-------------------|----------|-------|
+| Industry | `industry` | `like` or `in` | **Always lowercase** (e.g., "software development", "information technology and internet"). Never use capitalized forms here. |
+| Employee size | `employee_count` | `between` | **Never use `in`** — causes size overflow. Always `between` with min and max values. |
+| Geography | `country_iso_code` | `in` | ISO-2 uppercase (FR, CA, ES, NL, CH, BE, PL, PT) |
+| Has funding | `has_funding` | `=` | true/false |
+| Funding stage | `funding_stage_normalized` | `in` | Values: pre_seed_round, seed_round, series_a, series_b, series_c. Use both forms: "seed" and "seed_round" for max coverage. |
+| Business model / use case | `keyword` | `like` | Free-text search in name/tagline/description. **Rotate each session** to avoid hitting the same pool. |
+| Company type | `company_type` | `in` | PRIVATELY_HELD, PUBLIC_COMPANY (uppercase snake_case) |
+| Recent growth signal | `employee_growth_6m` | `>` | Use `> 10` to target fast-growing companies |
+| Recent funding signal | `last_funding_date` | `>=` | e.g., "2022-01-01" to target recently funded |
+| Founded after | `founded_year` | `>=` | e.g., 2018 |
 
-Filter rules:
-- Always use `between` for employee_count (never `in` — causes size overflow)
-- Industry names are **lowercase** for company search
-- Rotate keywords across sessions to avoid hitting the same pool
-- Flag and skip companies whose product competes directly with the user's
+#### PEOPLE SEARCH filter mapping
 
-**Step 2 — Find decision-makers**
+| ICP Field | DataForB2B Column | Operator | Notes |
+|-----------|-------------------|----------|-------|
+| Job title | `current_title` | `like` or `in` | Use `like` for partial match ("Founder" catches "Co-Founder", "Founder & CEO"). Use `in` for exact list. |
+| Department | `current_title` | `like` | e.g., "Head of Engineering", "VP Sales" |
+| Industry (people) | `current_company_industry` | `=` or `in` | **Capitalized** here (e.g., "Computer Software", "Information Technology & Services"). Different from company search. |
+| Company size | `current_company_size` | `in` | Use string ranges: "2-10", "11-50", "51-200", "201-500" |
+| Geography | `profile_country` | `in` | ISO-2 uppercase. Use GB not UK for United Kingdom. |
+| Funding (people) | `current_company_has_funding` | `=` | true/false |
+| Funding stage (people) | `current_company_funding_stage` | `in` | Same values as company: seed_round, series_a, etc. |
+| Years in role | `years_in_current_position` | `between` | e.g., between 0 3 = new in role (buying trigger) |
+| Skills | `skill` | `like` or `in` | e.g., "Python", "Salesforce", "LLM" — use for technical targeting |
+| Language | `language_iso` | `in` | e.g., "fr", "en", "es" — use to match geography |
+| Experience | `years_of_experience` | `between` | e.g., between 3 15 = mid-career decision-makers |
+| Currently employed | `is_currently_employed` | `=` | Always true — skip between jobs |
 
-For each company found:
-```
-Filters:
-- current_company_id: [company id from step 1]
-- current_title: in [ICP target titles]
-- seniority: [ICP seniority]
-- profile_country: in [ICP geography]
-```
+#### Filter generation output (show this to the user before searching)
 
-Rules:
-- Max 1 contact per company (pick highest seniority)
-- Industry names are **capitalized** for people search
-- Only keep profiles with a LinkedIn URL
-- Target: 20 leads per session
-
-### Qualification scoring (apply to every profile)
-
-For each profile, score against the ICP:
-- ✅ Title matches ICP persona
-- ✅ Company size in ICP range
-- ✅ Country in ICP geography
-- ✅ Company stage matches ICP stage
-- ✅ Has LinkedIn URL
-
-**🟢 4-5 checks** → include, label Strong fit
-**🟡 3 checks** → include, label Good fit
-**🔴 1-2 checks** → discard silently
-
-### Output format
-
-Present each lead as a rich card:
+After mapping, display the generated filters clearly:
 
 ```
-[#] 👤 [Name]
-    [Title] @ [Company] — [Country flag + country]
-    Company: [one-line description], [X] employees, [funding stage]
-    Fit: 🟢 Strong / 🟡 Good
-    Why they match: [2-3 sentences — specific ICP criteria they hit]
-    Pain point: [what specific friction this product removes for them]
-    LinkedIn: [URL]
+═══════════════════════════════════════════
+GENERATED SEARCH FILTERS
+═══════════════════════════════════════════
+
+COMPANY SEARCH
+  industry: like "software development"
+  employee_count: between 5 200
+  country_iso_code: in [FR, CA, ES, NL, CH]
+  has_funding: = true
+  funding_stage_normalized: in [pre_seed_round, seed_round, seed, series_a]
+  keyword: like "AI agent" [will rotate each session]
+  founded_year: >= 2018
+
+PEOPLE SEARCH (applied to each company found)
+  current_title: like "Founder" OR like "CTO" OR like "Head of Engineering"
+  current_company_industry: in ["Computer Software", "Information Technology & Services"]
+  current_company_size: in ["2-10", "11-50", "51-200"]
+  profile_country: in [FR, CA, ES, NL, CH]
+  current_company_has_funding: = true
+  is_currently_employed: = true
+
+KEYWORD ROTATION POOL (one per session):
+  Session 1: "AI agent"
+  Session 2: "sales automation"
+  Session 3: "outreach automation"
+  Session 4: "revenue automation"
+  Session 5: "growth automation"
+═══════════════════════════════════════════
+```
+
+Ask: **"These are the filters I'll use to find your leads. Look good, or want to adjust anything?"**
+
+Wait for confirmation before running any search.
+
+---
+
+### Step 3B — Company Search
+
+Execute the company search with the validated filters. Retrieve up to 30 companies per session (more than 20 to allow for quality filtering).
+
+**Exclusion rule:** After results come in, flag and skip any company whose product description directly overlaps with the user's product (competitor). Do this silently — don't count excluded companies toward the target.
+
+---
+
+### Step 3C — Decision-Maker Search
+
+For each qualifying company, find the best-fit decision-maker:
+
+- Filter by `current_company_id` (use the company `id` from Step 3B — never filter by name, causes false matches)
+- Apply title and seniority filters from the mapping above
+- Pick **1 contact per company** — highest seniority match
+- Require LinkedIn URL — discard profiles without one
+
+---
+
+### Step 3D — Qualification Scoring
+
+Score each profile against the full ICP. Be explicit and granular:
+
+```
+SCORING CRITERIA (1 point each):
+  ✅ Job title matches ICP persona list
+  ✅ Company size within ICP range
+  ✅ Country in ICP geography
+  ✅ Company funding stage matches ICP stage
+  ✅ LinkedIn URL present and valid
+  ✅ [BONUS] Company shows growth signal (hiring, recent funding)
+  ✅ [BONUS] Profile has relevant skills (from ICP "signs of fit")
+```
+
+**🟢 5-7 points** → Strong fit — include
+**🟡 3-4 points** → Good fit — include
+**🔴 1-2 points** → Weak fit — discard silently
+
+Target: **20 qualified leads** per session. Run additional keyword rotations if the first batch doesn't fill 20.
+
+---
+
+### Step 3E — Output format
+
+Present each lead as a rich qualification card:
+
+```
+[#] 👤 [Full Name]
+    [Exact Title] @ [Company Name] — [🇫🇷/🇨🇦/🇳🇱 Country]
+
+    Company:  [One-line description of what they do]
+              [X] employees · [Funding stage] · Founded [year]
+              [Growth signal if available: e.g., "+18% headcount in 6mo"]
+
+    Fit score: 🟢 Strong (6/7) / 🟡 Good (4/7)
+
+    Why they match:
+    → [Criterion 1 they hit — specific and factual]
+    → [Criterion 2 they hit]
+    → [Criterion 3 — pain point connection]
+
+    Their pain point: [1 sentence on the specific friction this product removes for someone in their role]
+
+    LinkedIn: [full URL]
 ```
 
 After showing all leads:
-> **"Found [N] leads matching your ICP. Shall I send outreach to all of them, or remove any first?"**
+> **"Found [N] qualified leads. Want me to reach out to all of them, or remove any first?"**
 
 **Do not proceed to Phase 4 until the user explicitly confirms the list.**
 
