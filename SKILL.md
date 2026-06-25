@@ -256,7 +256,11 @@ SCORING CRITERIA (1 point each):
 **🟡 3-4 points** → Good fit — include
 **🔴 1-2 points** → Weak fit — discard silently
 
-Target: **20 qualified leads** per session. Run additional keyword rotations if the first batch doesn't fill 20.
+Target: **exactly 20 qualified leads per session — no more, no less.**
+
+Each session uses **one keyword** from the rotation pool. If the keyword returns fewer than 20 qualified leads after scoring, do NOT switch to another keyword in the same session — log what was found, report the shortfall, and use the next keyword in the rotation on the next day's run.
+
+One keyword per day. 20 leads per day. Always.
 
 ---
 
