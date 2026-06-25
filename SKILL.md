@@ -346,16 +346,28 @@ Do not proceed to Phase 4 until the user explicitly confirms the list.
 
 ## PHASE 4 — Outreach Message (3 options + humanizer)
 
-Before sending any outreach, generate 3 message options and let the user choose.
+Before generating messages, ask the user 3 quick questions:
+
+> **"Before I write your outreach messages, 3 quick questions:"**
+>
+> **1. Tone** — Casual & friendly (like texting a peer) or Professional & formal?
+>
+> **2. Length** — Short (1-2 lines) / Mid (3-4 lines) / Long (5-6 lines)?
+>
+> **3. Language** — English (default) or another language?
+>    _(I'll suggest based on your target countries — e.g. French if FR is your main market)_
+
+Wait for answers before generating anything.
 
 ### Message generation rules
 
 - Messages sent **only after a connection is accepted** — never with the initial request
-- Under 300 characters
+- Respect the chosen length strictly
 - Reference a specific detail from the prospect's profile or company website
 - One clear CTA
 - Never use: "I hope this finds you well", "I came across your profile", "synergy", "leverage", "touch base"
 - Never mention the outreach platform by name
+- Write in the chosen language throughout
 
 ### Generate 3 style options
 
@@ -365,7 +377,7 @@ OPTION A — Direct & curiosity-driven
 
 OPTION B — Peer-to-peer & warm
 [Conversational, references something specific from their website/role,
-feels like founder-to-founder]
+feels like founder-to-founder — adapt tone to casual/professional setting]
 
 OPTION C — Value-first
 [Leads with a specific insight or stat relevant to their situation,
@@ -377,7 +389,7 @@ Apply the `/humanizer` skill to each option before showing them.
 Ask:
 > **"Which message style? (A, B, or C) — or mix elements from two?"**
 
-Save the chosen template. It will be reused for all future outreach.
+Save the chosen template + tone + language + length settings. All future outreach uses the same preferences.
 
 ---
 
@@ -477,13 +489,17 @@ Triggered automatically when webhook detects an `accepted_invitation` event:
 After the first successful run, offer to automate everything.
 
 Say:
-> **"Want this to run automatically every morning? I'll set up a scheduled task that finds 20 new leads, adds them to your pipeline, and logs everything — while you sleep."**
+> **"Want this to run automatically every morning? Here's how to set it up in Cowork in 3 steps."**
 
-If yes, create a scheduled task in Cowork:
-- **Schedule:** Monday–Friday, 9:00 AM
-- **Task:** Run the full pipeline (Phase 3 → Phase 5 → Phase 6) using the saved ICP and message template
-- **Cap:** 20 connection requests/day
-- **Stop condition:** LinkupAPI checkpoint detected
+### How to install Lead Engine on Cowork
+
+> 1. Go to **[github.com/Eliott-89/lead-engine](https://github.com/Eliott-89/lead-engine)** → click **Code → Download ZIP**
+> 2. In Cowork → **Skills → Create a skill → Upload a skill** → upload the **ZIP file** (not a folder, not individual files — the ZIP directly)
+> 3. Once installed, create a scheduled task:
+>    - **Schedule:** Monday–Friday, 9:00 AM
+>    - **Prompt:** `/lead-engine`
+>    - **Cap:** 20 connection requests/day
+>    - **Stop condition:** checkpoint detected → pause 24h
 
 ---
 
