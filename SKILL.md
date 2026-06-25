@@ -251,10 +251,9 @@ Use exactly two search paths. Run both silently — only show the final scored l
 2. For each profile returned:
    - Pull their current company context (size, funding, industry) from the profile data
    - Verify the company matches ICP criteria (size range, funding stage, geography)
-   - Then check: **is this person the best possible contact at this company?**
-     - Run a quick people search on `current_company_id` to see if a more senior profile exists
-     - If yes → replace with the higher-seniority profile
-     - If no → keep the original
+   - Then always run a secondary check: **search all profiles at this company** using `current_company_id` with the ICP title filters
+   - Compare every profile found against the initial one — pick the highest-seniority match
+   - The lead kept is always the best possible contact at that company, regardless of who surfaced first
 3. Deduplicate against Path A (same company already found → keep the higher-scored profile)
 
 ---
