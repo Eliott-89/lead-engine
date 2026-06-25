@@ -493,7 +493,7 @@ Say:
 
 ### How to install Lead Engine on Cowork
 
-> 1. Go to **[github.com/Eliott-89/lead-engine](https://github.com/Eliott-89/lead-engine)** → click **Code → Download ZIP**
+> 1. Download the ZIP from **[dataforb2b.ai](https://dataforb2b.ai)** → Skills section
 > 2. In Cowork → **Skills → Create a skill → Upload a skill** → upload the **ZIP file** (not a folder, not individual files — the ZIP directly)
 > 3. Once installed, create a scheduled task:
 >    - **Schedule:** Monday–Friday, 9:00 AM

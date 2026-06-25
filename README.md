@@ -8,9 +8,14 @@ Give it your website. Get qualified leads in your inbox — automatically, every
 
 ## Install
 
+**Claude Code / CLI:**
 ```bash
 npx skills add Eliott-89/lead-engine
 ```
+
+**Cowork (scheduled automation):**
+1. Download the ZIP from **[dataforb2b.ai](https://dataforb2b.ai)** → Skills section
+2. Cowork → **Skills → Create a skill → Upload a skill** → upload the ZIP directly
 
 Then in Claude:
 
