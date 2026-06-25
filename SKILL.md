@@ -402,26 +402,42 @@ Daily cap: **20 connection requests maximum.**
 
 ### Step 5B — Webhook Monitoring Setup
 
-After each successful invite, add the profile to a LinkupAPI webhook to detect when the connection is accepted:
+After all invites are sent for the day:
 
 1. Check if a monitoring webhook already exists (`linkupapi_list_webhooks`)
-2. If not, create one (`linkupapi_create_webhook`) with event type `connection_accepted`
-3. Start the webhook if not already running (`linkupapi_start_webhook`)
-4. Each new invitee is automatically monitored — no manual checking needed
+2. If not, create one in hosted mode (`linkupapi_create_webhook`, event: `accepted_invitation`) — no server needed
+3. The webhook stays active across days — all pending invitees are monitored automatically
 
-When a `connection_accepted` event fires → trigger Phase 7 (message sending) automatically.
+### Step 5C — Daily Follow-Back Check
+
+At the end of every daily pipeline run (after invites are sent), poll the webhook for new acceptances:
+
+```
+linkupapi_get_webhook_events(webhook_id, since: [last check timestamp])
+```
+
+**For each `accepted_invitation` event found:**
+1. Match the profile to a row in `leads.csv`
+2. Update that row: Status = "Connected", date of acceptance logged
+3. Trigger Phase 7 immediately: generate + show the outreach message for approval
+4. Once message is sent, update row again: Status = "Message Sent"
+
+**If no new acceptances:**
+- Leave the webhook running
+- Note in the daily summary: "[N] invites still pending"
+- Check again tomorrow
 
 ### After sending
 
 ```
-✅ Sent [N] connection requests — monitoring active
+✅ [N] connection requests sent today
 
-Pipeline:
-- [Name] @ [Company] — [Profile URL] — ⏳ pending
+Follow-back check:
+- [Name] @ [Company] — ✅ accepted today → message sent
+- [Name] @ [Company] — ⏳ still pending (invited [X] days ago)
 - ...
 
-→ You'll be notified automatically when a connection accepts.
-  Message will be sent after your approval.
+→ Webhook active — you'll be notified automatically on next acceptance.
 ```
 
 ---
@@ -444,14 +460,15 @@ If file doesn't exist: create it with headers first.
 
 ## PHASE 7 — Message Sending (after connection accepted)
 
-Triggered automatically by webhook event OR manually by user:
+Triggered automatically when webhook detects an `accepted_invitation` event:
 
-1. Pull prospect context: name, title, company, website summary
-2. Load saved message template (from Phase 4)
-3. Personalize: replace [Name], [Company], any dynamic tokens — reference website detail if available
-4. Show the final message to the user for approval
-5. Send via LinkupAPI DM once approved
-6. Update `leads.csv`: Status = "Message Sent", log date
+1. Match the event to the profile in `leads.csv`
+2. Pull prospect context: name, title, company, website summary
+3. Load saved message template (from Phase 4)
+4. Personalize: replace [Name], [Company], any dynamic tokens
+5. Show the final message to the user for approval
+6. Send via LinkupAPI DM once approved
+7. Update `leads.csv`: Status = "Message Sent", date logged
 
 ---
 
