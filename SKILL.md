@@ -23,7 +23,6 @@ Before anything else, verify the user's environment is ready. Run this check sil
 ### Required tools
 - **DataForB2B MCP** — for lead search and enrichment
 - **LinkupAPI MCP** — for LinkedIn connection requests
-- **Google Sheets MCP** *(optional for Phase 1, required for Phase 2)* — to save and track leads
 
 ### Check logic
 
@@ -40,18 +39,17 @@ Present three options:
 ```
 1. Create an account at https://dataforb2b.ai
    → Choose a plan (Starter at $49/mo is enough to start)
-   → Copy your API key from the dashboard
 
 2. Add the DataForB2B MCP to Claude:
-   → Go to Claude Settings > Connectors (or MCP settings)
-   → Search for "DataForB2B" and connect it
-   → Paste your API key when prompted
+   → In your DataForB2B dashboard, copy your MCP link
+   → Go to Claude Settings > Connectors
+   → Paste the MCP link and click Connect
 ```
 
 #### LinkupAPI setup
 ```
 1. Create an account at https://linkupapi.com
-   → Start the free trial or choose a plan
+   → Choose a plan
 
 2. Connect your LinkedIn account to LinkupAPI:
    → In your LinkupAPI dashboard, go to "Accounts"
@@ -61,21 +59,9 @@ Present three options:
    → Wait for the account status to show "Active"
 
 3. Add the LinkupAPI MCP to Claude:
+   → In your LinkupAPI dashboard, copy your MCP link
    → Go to Claude Settings > Connectors
-   → Search for "LinkupAPI" and connect it
-   → Paste your API key when prompted
-```
-
-#### Google Sheets setup (optional)
-```
-1. Add the Google Sheets MCP to Claude:
-   → Go to Claude Settings > Connectors
-   → Search for "Google Sheets" and connect it
-   → Authorize with your Google account
-
-2. Create a tracking spreadsheet:
-   → Create a new Google Sheet named "LinkedIn Prospects"
-   → The skill will auto-create the columns on first run
+   → Paste the MCP link and click Connect
 ```
 
 Once setup is confirmed, proceed to Phase 1.
@@ -246,17 +232,21 @@ Next steps:
 
 ---
 
-## PHASE 4 — Tracking (Google Sheets) [optional]
+## PHASE 4 — Tracking (Local file)
 
-If Google Sheets MCP is connected, after Phase 3 automatically:
+After Phase 3, automatically append the sent leads to a local CSV file (`leads.csv`) in the user's current directory.
 
-1. Open (or create) the "LinkedIn Prospects" spreadsheet
-2. Append a row for each sent request with columns:
-   ```
-   Date | Name | Title | Company | Country | LinkedIn URL | ICP Match Reason | Status | Message Sent
-   ```
-3. Set Status = "Connection Sent"
-4. Confirm to user: **"[N] profiles saved to your Google Sheet."**
+Columns:
+```
+Date | Name | Title | Company | Country | LinkedIn URL | ICP Match Reason | Status | Message Sent
+```
+
+Set Status = "Connection Sent" and Message Sent = empty for now.
+
+If the file doesn't exist yet, create it with the header row first.
+
+After writing, confirm to the user:
+**"[N] leads saved to leads.csv. You can open it in Excel or Google Sheets to track your pipeline."**
 
 ---
 
@@ -286,7 +276,7 @@ Once everything is set up, the user's daily routine is:
 Morning (5 min):
 → Run /lead-engine
 → Confirm the lead list
-→ Approve send → 15 requests go out
+→ Approve send → 20 requests go out
 
 Afternoon (2 min):
 → Check Google Sheet for accepted connections
