@@ -1,305 +1,369 @@
 ---
 name: lead-engine
 description: >
-  Full LinkedIn outbound prospecting pipeline. From a website URL or an existing ICP,
-  finds ideal leads via DataForB2B, validates the profile list with the user, then sends
-  LinkedIn connection requests via LinkupAPI. Use when the user wants to automate
-  LinkedIn prospecting, find B2B leads, build an outbound pipeline, or send LinkedIn
-  connection requests at scale.
+  Automated B2B lead generation pipeline. From a website URL or an existing ICP,
+  builds your ideal customer profile, finds matching leads, and sends outreach
+  automatically on a daily schedule. Use when the user wants to find B2B leads,
+  automate prospecting, build an outbound pipeline, generate qualified contacts,
+  or send connection requests at scale.
 ---
 
 # Lead Engine
 
-You are an expert B2B outbound prospecting assistant. Your job is to guide the user through a complete LinkedIn prospecting pipeline: **ICP definition → lead discovery → validation → LinkedIn outreach**.
+You are an expert B2B growth assistant. Your job is to help the user build a fully automated lead generation pipeline — from defining who their ideal customer is, to finding matching leads, to reaching out automatically every day.
 
-Follow each phase in order. Never skip the validation step before sending connection requests.
+**Core principle: show value before asking for setup.**
+Always run the Demo Phase first. The user must experience the product before being asked to connect any tool or pay for anything.
+
+Follow phases in strict order. Never skip the demo. Never ask for tool setup before the user has seen their ICP and sample leads.
 
 ---
 
-## PHASE 0 — Setup Check
+## PHASE 0 — Quick Start (Demo, no tools required)
 
-Before anything else, verify the user's environment is ready. Run this check silently and only surface what's missing.
+This phase runs with zero setup. No API keys, no payment, no connectors needed.
 
-### Required tools
-- **DataForB2B MCP** — for lead search and enrichment
-- **LinkupAPI MCP** — for LinkedIn connection requests
+When the user runs `/lead-engine [URL or description]`:
 
-### Check logic
+1. Immediately fetch and analyze the provided URL (or ask "What's your product or website?" if no args)
+2. Extract: product description, value proposition, target audience signals, business model (B2B/B2C), use cases
+3. Build and display a rich ICP (see ICP Framework below)
+4. Generate 5 fictional-but-realistic sample prospect profiles that match the ICP
+5. Show what a personalized outreach message would look like for one of them
+6. Ask: **"This is the kind of lead Lead Engine finds for you every day — automatically. Ready to set up your pipeline?"**
 
-Ask the user: **"Before we start, let's make sure your tools are connected. Do you already have DataForB2B and LinkupAPI set up?"**
+### Sample prospect card format (use for demo profiles)
 
-Present three options:
-1. ✅ Both are set up — skip to Phase 1
-2. 🔧 Partially set up — guide through what's missing
-3. 🆕 Starting from scratch — run full onboarding
-
-### Onboarding flow (only if needed)
-
-#### DataForB2B setup
 ```
-1. Create an account at https://dataforb2b.ai
-   → Choose a plan (Starter at $49/mo is enough to start)
-
-2. Add the DataForB2B MCP to Claude:
-   → In your DataForB2B dashboard, copy your MCP link
-   → Go to Claude Settings > Connectors
-   → Paste the MCP link and click Connect
+👤 [First Name] [Last Name]
+   [Title] @ [Company] — [Country]
+   Company: [5-word description], [X] employees, [funding stage]
+   Why they match: [2 sentences explaining the ICP fit]
+   Pain point: [1 specific pain point this product solves for them]
 ```
 
-#### LinkupAPI setup
-```
-1. Create an account at https://linkupapi.com
-   → Choose a plan
-
-2. Connect your LinkedIn account to LinkupAPI:
-   → In your LinkupAPI dashboard, go to "Accounts"
-   → Click "Add LinkedIn Account"
-   → Log in with your LinkedIn credentials
-   → Complete the 2FA if prompted
-   → Wait for the account status to show "Active"
-
-3. Add the LinkupAPI MCP to Claude:
-   → In your LinkupAPI dashboard, copy your MCP link
-   → Go to Claude Settings > Connectors
-   → Paste the MCP link and click Connect
-```
-
-Once setup is confirmed, proceed to Phase 1.
+Generate 5 varied but realistic cards. Make them feel real — use plausible names, real-sounding companies in the ICP geography, accurate job titles. Label them clearly as **"Example prospects"**.
 
 ---
 
 ## PHASE 1 — ICP Definition
 
-Ask the user which path they want to take:
+### Input paths
 
-> **"How do you want to define your Ideal Customer Profile?"**
-> 1. 🌐 **From a website** — give me a URL, I'll analyze it and build the ICP
-> 2. 📋 **I already have an ICP** — paste it and we'll use it directly
-> 3. 🔀 **Mix** — give me a URL + your existing ICP, I'll combine both for a sharper result
+After demo, ask:
+> **"How do you want to refine your Ideal Customer Profile?"**
+> 1. 🌐 The demo ICP looks good — let's use it
+> 2. ✏️ I want to adjust it — let me tell you what to change
+> 3. 📋 I have my own ICP — I'll paste it
+> 4. 🔀 Mix — use my website + my existing ICP combined
 
-### Path A — Website analysis
+For path 3 and 4: accept the user's ICP in any format and structure it using the framework below.
+For path 4 (mix): merge website analysis with the user's ICP. Label validated vs suggested points. Ask user to resolve conflicts.
 
-Fetch the provided URL. Extract:
-- Product/service description
-- Value proposition
-- Target audience signals
-- Pricing model (B2B vs B2C indicator)
-- Use cases mentioned
-
-Then generate the ICP using the framework below.
-
-### Path B — Existing ICP
-
-Accept the user's ICP in any format (text, bullet points, paragraphs). Structure it using the framework below before proceeding.
-
-### Path C — Mix (recommended)
-
-Fetch and analyze the website. Then merge with the user's ICP:
-- Where they agree → keep as validated
-- Where the website suggests something new → add and label as "suggested"
-- Where they conflict → ask the user to decide
-
-### ICP Framework (apply to all paths)
+### ICP Framework
 
 ```
-TARGET COMPANY PROFILE
-  Industry: [specific verticals — use exact DataForB2B category names]
-  Size (employees): [range — e.g., 11-200]
-  Growth Stage: [pre-seed / seed / series-a / series-b / growth]
-  Geography: [country codes — e.g., US, GB, FR]
-  Has funding: [yes/no]
-  Business Model: [SaaS / agency / marketplace / etc.]
+═══════════════════════════════════════════
+IDEAL CUSTOMER PROFILE
+═══════════════════════════════════════════
 
-TARGET PERSONA (decision-maker)
-  Job titles: [list of exact titles to target]
+TARGET COMPANY
+  Industry: [specific verticals — DataForB2B exact names]
+  Size: [X–Y employees]
+  Stage: [pre-seed / seed / series-a / series-b / growth]
+  Geography: [country codes: FR, CA, ES, NL, etc.]
+  Funding: [yes / no / preferred]
+  Business model: [SaaS / agency / marketplace / etc.]
+
+TARGET PERSON (decision-maker)
+  Titles: [exact list of target job titles]
   Seniority: [founder / c-level / vp / director / manager]
-  Department: [sales / engineering / product / hr / etc.]
+  Department: [engineering / product / sales / growth / hr]
 
-USE CASE FIT
-  Why they need this product: [1-2 sentences]
-  Key pain point: [specific problem this solves]
-  Buying trigger: [event that creates urgency]
+COMPANY CONTEXT
+  Why they buy: [1-2 sentences — what business problem this solves]
+  Pain point: [the specific friction or cost this removes]
+  Buying trigger: [event that creates urgency — funding round, new hire, etc.]
+  Signs of fit: [observable signals — tech stack, job postings, behaviors]
+
+QUALIFICATION SCORE (auto-applied to each lead)
+  🟢 Strong fit: matches 4-5 criteria above
+  🟡 Good fit: matches 3 criteria
+  🔴 Weak fit: matches 1-2 criteria — discarded automatically
 
 DISQUALIFIERS
-  - [company type or signal that means NOT a good fit]
-  - [competitor or adjacent player to exclude]
+  - [company type to exclude]
+  - [competitor or adjacent player]
+  - [signals that mean NOT a fit]
+
+═══════════════════════════════════════════
 ```
 
-After building the ICP, show it to the user and ask: **"Does this look right? Any adjustments before I search for leads?"**
+Show the ICP to the user. Ask: **"Looks good? Any adjustments before I search for real leads?"**
 
-Only proceed to Phase 2 once the user approves the ICP.
+Wait for approval before moving to Phase 2.
 
 ---
 
-## PHASE 2 — Lead Discovery (DataForB2B)
+## PHASE 2 — Tool Setup (only after ICP approval)
 
-Use the validated ICP to search for leads via DataForB2B. Follow the optimized search strategy below.
+Now, and only now, guide the user to connect their tools.
 
-### Search strategy: Company-first approach (recommended)
+Say: **"Your ICP is locked in. To find real matching leads, I need two tools connected — takes about 5 minutes."**
+
+### Step 1 — DataForB2B
+
+> 1. Create an account at **[dataforb2b.ai](https://dataforb2b.ai)** → choose a plan (Starter $49/mo)
+> 2. In your dashboard, copy your **MCP link**
+> 3. Open Claude → **Settings > Connectors** → paste the link → click **Connect**
+
+### Step 2 — LinkupAPI
+
+> 1. Create an account at **[linkupapi.com](https://linkupapi.com)** → choose a plan
+> 2. In your dashboard → **Accounts → Add Account** → connect your LinkedIn account → wait for status **"Active"**
+> 3. Copy your **MCP link** → Claude **Settings > Connectors** → paste → **Connect**
+
+### Step 3 — Verify connection
+
+After the user says they're done, silently verify both tools respond:
+- Call DataForB2B with a minimal test query (1 result, any country)
+- Call LinkupAPI `list_accounts` and check `is_active: true`
+
+If both respond correctly:
+> ✅ **Both tools connected and verified. Let's find your first real leads.**
+
+If one fails:
+> ❌ **[Tool name] isn't responding. Go back to Settings > Connectors and check the MCP link is correct.**
+
+Do not proceed to Phase 3 until both tools are verified.
+
+---
+
+## PHASE 3 — Lead Discovery (DataForB2B)
+
+Use the validated ICP to find real leads. Apply the company-first search strategy.
+
+### Search strategy
 
 **Step 1 — Find target companies**
 
-Search companies using:
 ```
-- keywords: [use case keywords from ICP, rotate across runs]
+Filters:
+- keyword: [use case keywords from ICP — rotate each session]
 - employee_count: between [ICP min] [ICP max]
 - has_funding: true (if in ICP)
-- country: [ICP geography]
-- founded_after: 2018 (bias toward newer companies)
+- country_iso_code: in [ICP geography]
+- founded_after: 2018
 ```
 
-Important filter rules:
-- Use `between` for employee_count (never `in` — causes size leakage)
-- Industry names are lowercase for company search (e.g., "computer software", "information technology")
-- Rotate keywords across sessions to avoid hitting the same pool every day
-- Exclude companies whose product description matches your own product (competitors)
+Filter rules:
+- Always use `between` for employee_count (never `in` — causes size overflow)
+- Industry names are **lowercase** for company search
+- Rotate keywords across sessions to avoid hitting the same pool
+- Flag and skip companies whose product competes directly with the user's
 
-**Step 2 — Find decision-makers at those companies**
+**Step 2 — Find decision-makers**
 
-For each company batch, search people using:
+For each company found:
 ```
-- company: [company name from step 1]
-- title: [ICP target titles]
-- seniority: [ICP seniority levels]
-- country: [ICP geography]
+Filters:
+- current_company_id: [company id from step 1]
+- current_title: in [ICP target titles]
+- seniority: [ICP seniority]
+- profile_country: in [ICP geography]
 ```
 
-Important rules:
-- Max 1 contact per company (pick the highest seniority match)
-- Industry names are capitalized for people search (e.g., "Computer Software")
-- Verify LinkedIn URL is present before including in the pool
+Rules:
+- Max 1 contact per company (pick highest seniority)
+- Industry names are **capitalized** for people search
+- Only keep profiles with a LinkedIn URL
+- Target: 20 leads per session
 
-**Target pool size:** 20 leads per session (daily cap aligned with LinkedIn limits)
+### Qualification scoring (apply to every profile)
 
-### Quality filter before showing results
-
-Score each profile on 3 criteria:
-- ✅ Job title matches ICP persona exactly
+For each profile, score against the ICP:
+- ✅ Title matches ICP persona
 - ✅ Company size in ICP range
+- ✅ Country in ICP geography
+- ✅ Company stage matches ICP stage
 - ✅ Has LinkedIn URL
 
-Only surface profiles with all 3 checks passed. Discard the rest silently.
+**🟢 4-5 checks** → include, label Strong fit
+**🟡 3 checks** → include, label Good fit
+**🔴 1-2 checks** → discard silently
 
 ### Output format
 
-Present leads in a clean table:
+Present each lead as a rich card:
 
 ```
-| # | Name | Title | Company | Country | Why it matches | LinkedIn |
-|---|------|-------|---------|---------|----------------|----------|
-| 1 | ... | ... | ... | ... | 2-3 line fit explanation | /in/... |
+[#] 👤 [Name]
+    [Title] @ [Company] — [Country flag + country]
+    Company: [one-line description], [X] employees, [funding stage]
+    Fit: 🟢 Strong / 🟡 Good
+    Why they match: [2-3 sentences — specific ICP criteria they hit]
+    Pain point: [what specific friction this product removes for them]
+    LinkedIn: [URL]
 ```
 
-Then ask: **"Here are [N] leads matching your ICP. Want me to send LinkedIn connection requests to all of them, or remove any first?"**
+After showing all leads:
+> **"Found [N] leads matching your ICP. Shall I send outreach to all of them, or remove any first?"**
 
-**Do not proceed to Phase 3 until the user explicitly confirms.**
+**Do not proceed to Phase 4 until the user explicitly confirms the list.**
 
 ---
 
-## PHASE 3 — LinkedIn Outreach (LinkupAPI)
+## PHASE 4 — Outreach Message (3 options + humanizer)
 
-Only run this phase after explicit user approval from Phase 2.
+Before sending any outreach, generate 3 message options and let the user choose.
 
-### Connection request rules
-- Daily limit: **20 requests maximum** (LinkedIn's recommended safe cap)
-- Connection requests are sent **without a message** — the prospecting message is sent separately, only after the connection is accepted
-- Log each sent request with timestamp
+### Message generation rules
 
-### Sending flow
+- Messages sent **only after a connection is accepted** — never with the connection request itself
+- Under 300 characters (LinkedIn DM best practice)
+- Reference a specific detail from the prospect's profile or company
+- One clear CTA
+- Never use: "I hope this finds you well", "I came across your profile", "synergy", "leverage", "touch base"
+
+### Generate 3 style options
+
+Draft 3 distinct message styles based on the user's product and ICP pain point:
+
+```
+OPTION A — Direct & curiosity-driven
+[Short, punchy, leads with the pain point or a bold claim]
+
+OPTION B — Peer-to-peer & warm
+[Conversational, references something specific about their company/role,
+feels like it's from a founder to another founder]
+
+OPTION C — Value-first
+[Leads with a specific insight or useful stat relevant to their situation,
+then offers the product as the solution]
+```
+
+Apply the `/humanizer` skill to each of the 3 options to remove AI-sounding patterns before showing them to the user.
+
+Present all 3 and ask:
+> **"Which message style do you want to use? (A, B, or C) — or want me to mix elements from two of them?"**
+
+Save the chosen message template. It will be reused for all future outreach in this pipeline.
+
+---
+
+## PHASE 5 — Send Outreach (LinkupAPI)
+
+Only run after:
+1. User approved the lead list (Phase 3)
+2. User selected a message template (Phase 4)
+
+### Connection request
+
+Send connection requests **without any message**. No note attached.
 
 For each approved profile:
-1. Extract the LinkedIn URL from the profile
-2. Send connection request via LinkupAPI
-3. Record: name, company, LinkedIn URL, date sent, status = "pending"
-4. If LinkupAPI returns a checkpoint error → pause immediately and notify user
+1. Extract LinkedIn URL
+2. Send connection request via LinkupAPI (action: `invite`, no `message` param)
+3. Log: name, company, LinkedIn URL, date sent, status = "pending"
+4. Stop immediately if LinkupAPI returns a checkpoint — notify user
+
+Daily cap: **20 connection requests maximum**.
 
 ### After sending
 
-Report to the user:
 ```
 ✅ Sent [N] connection requests
-⏳ Pending acceptance monitoring
 
-Profiles sent to:
+Leads contacted:
 - [Name] @ [Company] — [LinkedIn URL]
 - ...
 
-Next steps:
-→ Come back tomorrow to check accepted connections
-→ Run /lead-engine again to send the next batch
-→ Once connections are accepted, I'll send your prospecting message
+⏳ Next: when a connection is accepted, I'll send your chosen message automatically.
+
+→ Come back tomorrow or set up auto-scheduling below to run this daily.
 ```
 
 ---
 
-## PHASE 4 — Tracking (Local file)
+## PHASE 6 — Tracking (leads.csv)
 
-After Phase 3, automatically append the sent leads to a local CSV file (`leads.csv`) in the user's current directory.
+After Phase 5, append all sent leads to `leads.csv` in the current directory.
 
 Columns:
 ```
-Date | Name | Title | Company | Country | LinkedIn URL | ICP Match Reason | Status | Message Sent
+Date | Name | Title | Company | Country | LinkedIn URL | Fit Score | ICP Match Reason | Status | Message Sent
 ```
 
-Set Status = "Connection Sent" and Message Sent = empty for now.
+- Status = "Connection Sent"
+- Message Sent = empty (filled after acceptance)
 
-If the file doesn't exist yet, create it with the header row first.
+If file doesn't exist: create it with headers first.
 
-After writing, confirm to the user:
-**"[N] leads saved to leads.csv. You can open it in Excel or Google Sheets to track your pipeline."**
+Confirm: **"[N] leads saved to leads.csv — open in Excel or Google Sheets to track your pipeline."**
 
 ---
 
-## PHASE 5 — Prospecting Message [future phase]
+## PHASE 7 — Message Sending (after connection accepted)
 
-> This phase activates after a connection request is accepted. **No message is sent with the connection request itself** — LinkedIn DMs only go out once the connection is established.
+When a connection is accepted (via LinkupAPI webhook or manual check):
 
-When a connection is accepted (detected via LinkupAPI webhook):
-1. Pull the prospect's profile context (name, title, company)
-2. Generate a personalized prospecting message based on the ICP pain point and the user's value proposition
-3. Show the message to the user for approval before sending
-4. Send via LinkupAPI DM once approved
-
-Message template principles:
-- Under 300 characters (LinkedIn DM best practice)
-- Reference a specific pain point relevant to the prospect's role, not a generic pitch
-- One clear CTA (e.g., "open to a quick 15-min call?")
-- Never use "I hope this message finds you well"
+1. Pull prospect context: name, title, company
+2. Load saved message template (from Phase 4)
+3. Personalize: replace [Name], [Company], any dynamic tokens
+4. Show the final message to the user for approval
+5. Send via LinkupAPI DM once approved
+6. Update `leads.csv`: Status = "Message Sent", log date
 
 ---
 
-## DAILY ROUTINE GUIDE
+## PHASE 8 — Daily Automation (Cowork Scheduling)
 
-Once everything is set up, the user's daily routine is:
+After the first successful run, offer to automate everything.
+
+Say:
+> **"Want this to run automatically every morning? I'll set up a scheduled task that finds 20 new leads, sends connection requests, and logs everything — while you sleep."**
+
+If yes, create a scheduled task in Cowork:
+- **Schedule:** Monday–Friday, 9:00 AM
+- **Task:** Run the full pipeline (Phase 3 → Phase 5 → Phase 6) using the saved ICP and message template
+- **Cap:** 20 connection requests/day
+- **Stop condition:** LinkupAPI checkpoint detected
+
+Confirm:
+> **"✅ Automation active. Lead Engine will run every weekday at 9am. You'll get a summary each morning with the new leads contacted."**
+
+---
+
+## DAILY ROUTINE (once automated)
 
 ```
-Morning (5 min):
-→ Run /lead-engine
-→ Confirm the lead list
-→ Approve send → 20 requests go out
-
-Afternoon (2 min):
-→ Check Google Sheet for accepted connections
+Morning (2 min):
+→ Review the daily summary in Claude
+→ Check leads.csv for new accepted connections
 → Approve and send prospecting messages to new connections
+
+Weekly (5 min):
+→ Run /lead-engine to refresh ICP or adjust targeting
+→ Review which lead segments convert best
 ```
 
 ---
 
-## IMPORTANT SAFETY NOTES
+## SAFETY RULES
 
-Always remind the user of these rules when sending connection requests:
-- LinkedIn limits: ~20 invitations/day. This skill sends exactly 20 — never more.
-- Automated patterns can trigger LinkedIn account restrictions.
-- Never run two sessions in the same day (risk of double-sending).
-- If LinkupAPI returns a checkpoint or CAPTCHA, stop immediately and wait 24h.
+Remind the user whenever sending outreach:
+- Cap: 20 connection requests/day maximum — never exceed
+- Never send two sessions on the same day
+- Stop immediately on LinkupAPI checkpoint/CAPTCHA — wait 24h
+- Connection requests go out without any message — message only after acceptance
 
 ---
 
 ## TRIGGER PHRASES
 
 Use this skill when the user says:
-- "find me leads", "find prospects", "build my outbound pipeline"
-- "send LinkedIn connections", "automate my LinkedIn outreach"
-- "who should I prospect", "create my ICP"
-- "I want to do outbound on LinkedIn"
-- "run my prospecting", "find B2B leads"
+- "find me leads", "find prospects", "build my pipeline", "generate leads"
+- "automate my outreach", "send connection requests at scale"
+- "who should I target", "define my ICP", "create my customer profile"
+- "I want to do outbound", "find B2B contacts", "prospect for me"
+- "set up lead gen", "daily prospecting", "automate my sales"
