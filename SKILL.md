@@ -227,28 +227,43 @@ Wait for confirmation before running any search.
 
 ---
 
-### Step 3C — Multi-Path Search Strategy
+### Step 3C — Two-Path Search Strategy
 
-Do NOT follow a fixed search order. Iterate across multiple search paths and take the best leads from each. Run all paths silently — only show the final scored lead list.
+Use exactly two search paths. Run both silently — only show the final scored lead list.
 
-**Path A — Company first, then people**
-1. Run company search with validated filters → get 30 companies
-2. For each company, run people search filtered by `current_company_id`
-3. Take the highest-seniority match with a profile URL
+---
 
-**Path B — People first, direct search**
-1. Run people search with title + industry + country + funding filters directly
-2. Deduplicate against Path A results (same company = keep highest score)
+**Path A — Company first, then best profile**
 
-**Path C — People first with keyword on headline**
-1. Run people search with `keyword` filter on headline (e.g., "AI agent", "outbound automation")
-2. Pull company context from their current role
-3. Deduplicate against A and B
+1. Run company search with validated filters → retrieve up to 30 companies
+2. For each qualifying company, run a people search filtered by `current_company_id`
+3. From the results, pick the **single best-fit profile** at that company:
+   - Rank by seniority (Founder > CEO > CTO > VP > Director > Head of > Manager)
+   - Require a profile URL
+   - If multiple profiles match, take the highest rank only — one contact per company
+4. If no profile is found for a company, discard the company silently
 
-**Iteration rule:**
-- If any path returns fewer than 10 strong leads, try a looser filter variant (wider size range, additional countries, softer keyword)
-- Never run more than 3 iterations on the same path
-- Stop when 20+ qualified leads are scored or all paths exhausted
+---
+
+**Path B — Profile first, then company verification**
+
+1. Run a people search directly with title + industry + country + funding filters
+2. For each profile returned:
+   - Pull their current company context (size, funding, industry) from the profile data
+   - Verify the company matches ICP criteria (size range, funding stage, geography)
+   - Then check: **is this person the best possible contact at this company?**
+     - Run a quick people search on `current_company_id` to see if a more senior profile exists
+     - If yes → replace with the higher-seniority profile
+     - If no → keep the original
+3. Deduplicate against Path A (same company already found → keep the higher-scored profile)
+
+---
+
+**Combination rule:**
+- Merge A and B results, deduplicated by company (one lead per company, always)
+- If total < 20 qualified leads: loosen one filter (widen size range, add one country, soften keyword) and re-run the weaker path only
+- Never run more than 2 loosening iterations
+- Stop when 20 leads scored or both paths exhausted
 
 ---
 
