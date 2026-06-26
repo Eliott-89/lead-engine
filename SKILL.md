@@ -204,7 +204,27 @@ Minimum 5 typeahead calls per ICP. More signals = more calls = more precision.
 
 ---
 
-#### Step 3 — Build the maximum-filter company search
+#### Step 3 — Determine the `industry` filter role (critical decision)
+
+Before building filters, decide how to use `industry` — its role depends on the ICP target type:
+
+**Case A — ICP targets SaaS / tech companies operating in a vertical** (e.g. "HR tech SaaS", "legal tech", "fintech platform")
+→ `categories` = vertical (e.g. "recruitment", "human resources")
+→ `industry` = company type filter: `like "software development"` — eliminates agencies, consultancies, service firms that share the same categories
+→ `keyword` = what the product specifically does (e.g. "hiring", "ATS", "candidate matching")
+
+**Case B — ICP targets companies that ARE in a vertical** (e.g. law firms, accounting firms, clinics)
+→ `categories` = vertical (e.g. "law firm", "legal services")
+→ `industry` = the vertical itself (e.g. `like "law practice"`)
+→ `keyword` = what they buy / their pain point (e.g. "contract management", "billing")
+
+**Never combine `categories` vertical + `industry` vertical together** — both filter the same dimension and collapse the pool. Pick one for vertical targeting, use the other for company type.
+
+**Keyword must be simple, common words** — not jargon. "hiring" (appears in thousands of descriptions) >> "talent acquisition" (rare). Test: would this word appear naturally in a 3-line company description? If not, pick a simpler synonym.
+
+---
+
+#### Step 4 — Build the maximum-filter company search
 
 Stack **every available filter** that the ICP supports. The default is to use all of them — only omit a filter if the ICP genuinely has no signal for it.
 
@@ -213,8 +233,8 @@ Stack **every available filter** that the ICP supports. The default is to use al
 ```
 TIER 1 — Always on (non-negotiable)
   categories: in [typeahead-resolved, 3-5 specific values]   ← vertical
-  keyword: like [ICP use case / pain point — session rotation] ← precision
-  industry: like [typeahead-resolved lowercase]              ← reinforces vertical
+  keyword: like [simple common word — what companies in this space do]
+  industry: like [role depends on Case A/B above — software development OR vertical]
   employee_count: between [min] [max]                        ← never use `in`
   country_iso_code: in [ISO-2 list]                          ← geography
 
@@ -233,7 +253,9 @@ TIER 3 — Activate when ICP has strong vertical signals
   technology: in [tech stack signals]      ← if ICP targets users of specific tools
 ```
 
-**Rule:** start with all Tier 1 + all available Tier 2. If results < 15 → drop one Tier 2 filter (least specific first). If results > 200 → add more Tier 2/3 filters to tighten.
+**Rule:** start with Tier 1 + all available Tier 2. If results < 15 → drop one Tier 2 filter (least specific first). If results > 200 → add more Tier 2/3 filters to tighten.
+
+**Anti-collapse rule:** if adding `industry` drops results by > 80%, remove it — categories alone is sufficient for the vertical signal.
 
 ---
 
