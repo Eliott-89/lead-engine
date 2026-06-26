@@ -139,89 +139,110 @@ Do not proceed to Phase 3 until both tools are verified.
 
 ## PHASE 3 — Lead Discovery (DataForB2B)
 
-### Step 3A — Typeahead Resolution
+### Step 3A — Typeahead Resolution + Filter Construction
 
-Before building filters, use the DataForB2B `typeahead` tool to resolve exact stored values. Run all lookups silently — do not narrate them.
+This step is **fully adaptive** — it runs from scratch for every ICP, every user, every product. Never hardcode filter values. Always derive them from the ICP.
 
-**Priority: use `company_category` over `industry` for company search. Categories are far more precise and granular than industry labels — they map directly to what companies actually do.**
+Run all lookups silently. Do not narrate.
 
-Run these lookups for every ICP:
+#### Step 1 — Extract search signals from the ICP
 
-```
-1. typeahead(type: "company_category", query: [ICP keyword])
-   → returns specific categories (e.g. "Artificial Intelligence", "Sales Automation",
-     "B2B Data", "SaaS", "CRM") — use these as primary company filter
+From the validated ICP, extract:
+- **What the company does** (industry/vertical signals) → e.g. "HR tech", "legal AI", "e-commerce", "fintech", "proptech"
+- **What the company uses or buys** (use case signals) → e.g. "recruitment automation", "contract management", "payment processing"
+- **Who the person is** (title signals) → e.g. "Head of People", "General Counsel", "VP Finance"
+- **Geography** → country codes
+- **Size + stage** → employee range, funding stage
 
-2. typeahead(type: "company_industry", query: [ICP industry keyword])
-   → fallback if category returns too few results
+#### Step 2 — Run typeahead for each signal
 
-3. typeahead(type: "people_industry", query: [ICP industry keyword])
-   → for people search (capitalized values, different from company)
-
-4. typeahead(type: "city", query: [ICP geography city if relevant])
-   → only if city-level targeting needed
-```
-
-**Proven filter combination (tested):**
-
-`categories` alone is too broad — "artificial intelligence" includes mining, cosmetics, marine robotics. The winning combination is always **`categories` + `keyword` together**:
+For each signal extracted from the ICP, run typeahead to resolve exact stored values:
 
 ```
-categories: in ["artificial intelligence (ai)", "sales automation",
-                "ai automation", "b2b saas", "b2b sales"]   ← reduces pool
-keyword: like "[ICP use case]"                               ← targets exact usage
-founded_year: >= 2018
-employee_count: between 5 200
-has_funding: = true
+For each ICP vertical/use-case keyword:
+  typeahead(type: "category", query: [keyword])
+  → collect all results with popularity "1k-10k" or higher
+  → discard generic values (e.g. "software", "technology", "business") — too broad
+
+typeahead(type: "company_industry", query: [ICP vertical])
+  → fallback values, always lowercase
+
+typeahead(type: "people_industry", query: [ICP vertical])
+  → for people search, capitalized
+
+typeahead(type: "title", query: [ICP decision-maker title])
+  → resolve exact title variants stored in DB
+
+typeahead(type: "city", query: [city])
+  → only if city-level targeting needed
 ```
 
-`keyword` is the most discriminating filter — it searches the company's actual description text. It's what separates a generic AI company from one that does outreach/prospecting/sales automation.
+Run multiple queries per signal — 3 to 5 typeaheads per ICP. Pick the most specific values returned.
 
-**Filter priority:**
-1. `categories` (typeahead-resolved, specific combos) + `keyword` — primary, always combine both
-2. `industry` — fallback only if category+keyword returns < 15 results
-3. Never use `categories` alone — pool is too large and off-topic companies slip in
+#### Step 3 — Build the filter set
 
-Run typeahead on `category` for multiple ICP-related terms, pick the 3-5 most specific values, combine with `keyword` rotation.
+**Golden rule: `categories` + `keyword` always together. Never use either alone.**
+
+- `categories` reduces the pool to the right vertical
+- `keyword` targets the exact use case within that vertical
+- Used alone, both are too broad (categories catches unrelated sectors; keyword catches any mention of the word)
+
+Build the filter set like this:
+
+```
+COMPANY FILTERS
+  categories: in [typeahead-resolved specific values for ICP vertical]
+              → pick 3-5 most specific, avoid generic ("software", "technology")
+  keyword: like [ICP use case — derived from what the user's product solves]
+           → this is what the company does, not what they are
+  employee_count: between [ICP size min] [ICP size max]
+  country_iso_code: in [ICP geography — ISO-2 codes]
+  has_funding: = [true/false per ICP]
+  funding_stage_normalized: in [ICP stages]
+  founded_year: >= [ICP founding filter if relevant]
+
+PEOPLE FILTERS
+  current_title: like/in [typeahead-resolved title variants]
+  current_company_industry: in [typeahead people_industry values — Capitalized]
+  current_company_size: in [string ranges matching ICP size]
+  profile_country: in [same as company geography]
+  is_currently_employed: = true
+  current_company_has_funding: = [same as company]
+```
+
+#### Step 4 — Calibrate result volume
+
+Target: retrieve **30+ companies** to score down to 20 leads.
+
+- If results < 15 → loosen one filter (widen size range, add 1 country, use `industry` instead of `categories`)
+- If results > 200 → tighten (add `founded_year`, narrow funding stage, more specific `keyword`)
+- Log which iteration produced the best results — use same config next session
+
+#### Step 5 — Build keyword rotation pool from ICP
+
+Do NOT use a fixed keyword pool. Generate a session-specific rotation pool from the ICP:
+
+Extract 5 keywords that describe **what the user's target companies actually do** — derived from:
+- The user's product pain point ("what problem do my customers have?")
+- The ICP "signs of fit" and "buying triggers"
+- Synonyms and adjacent terms for the use case
+
+Example for an HR tech ICP:
+```
+Session 1: "talent acquisition"
+Session 2: "recruitment automation"
+Session 3: "ATS"
+Session 4: "candidate sourcing"
+Session 5: "people operations"
+```
+
+One keyword per session. Rotate in order. Regenerate the pool when all 5 are used.
 
 ---
 
-### Step 3B — ICP → Filter Mapping
+### Step 3B — Filter Display
 
-Translate every ICP field into exact DataForB2B filter parameters using the typeahead-resolved values. Show the mapping to the user before any credits are spent.
-
-#### COMPANY SEARCH filter mapping
-
-| ICP Field | DataForB2B Column | Operator | Notes |
-|-----------|-------------------|----------|-------|
-| Category | `categories` | `in` | **Use first — most precise.** Typeahead-resolved (e.g. "Artificial Intelligence", "Sales Automation", "SaaS"). Use `in` with multiple values. |
-| Industry | `industry` | `like` or `in` | Fallback if category too restrictive. Always lowercase — typeahead-resolved. |
-| Employee size | `employee_count` | `between` | **Never use `in`** — always `between` with min/max |
-| Geography | `country_iso_code` | `in` | ISO-2 uppercase (FR, CA, ES, NL, CH, BE) |
-| Has funding | `has_funding` | `=` | true/false |
-| Funding stage | `funding_stage_normalized` | `in` | pre_seed_round, seed_round, series_a, series_b, series_c |
-| Use case keyword | `keyword` | `like` | Rotate each session — see rotation pool below |
-| Company type | `company_type` | `in` | PRIVATELY_HELD, PUBLIC_COMPANY |
-| Growth signal | `employee_growth_6m` | `>` | e.g. > 10 |
-| Recent funding | `last_funding_date` | `>=` | e.g. "2022-01-01" |
-| Founded after | `founded_year` | `>=` | e.g. 2018 |
-
-#### PEOPLE SEARCH filter mapping
-
-| ICP Field | DataForB2B Column | Operator | Notes |
-|-----------|-------------------|----------|-------|
-| Job title | `current_title` | `like` or `in` | `like` catches partials ("Founder" → "Co-Founder") |
-| Industry (people) | `current_company_industry` | `=` or `in` | **Capitalized** — use typeahead-resolved values |
-| Company size | `current_company_size` | `in` | String ranges: "2-10", "11-50", "51-200", "201-500" |
-| Geography | `profile_country` | `in` | ISO-2. Use GB not UK |
-| Funding | `current_company_has_funding` | `=` | true/false |
-| Funding stage | `current_company_funding_stage` | `in` | seed_round, series_a, etc. |
-| Years in role | `years_in_current_position` | `between` | buying trigger: between 0 3 = new in role |
-| Skills | `skill` | `like` or `in` | technical targeting |
-| Language | `language_iso` | `in` | "fr", "en", "es" |
-| Currently employed | `is_currently_employed` | `=` | Always true |
-
-#### Filter display (show before searching)
+Show the constructed filters to the user before spending any credits. All values come from Step 3A — never hardcode them.
 
 ```
 ═══════════════════════════════════════════
@@ -229,27 +250,23 @@ GENERATED SEARCH FILTERS
 ═══════════════════════════════════════════
 
 COMPANY SEARCH
-  industry: like "[typeahead-resolved value]"
-  employee_count: between [X] [Y]
+  categories: in [[typeahead-resolved value 1], [value 2], [value 3]]
+  keyword: like "[today's keyword from ICP rotation pool]"
+  employee_count: between [ICP min] [ICP max]
   country_iso_code: in [XX, XX, XX]
-  has_funding: = true
-  funding_stage_normalized: in [pre_seed_round, seed_round, series_a]
-  keyword: like "[today's rotation keyword]"
-  founded_year: >= 2018
+  has_funding: = true/false
+  funding_stage_normalized: in [stage1, stage2]
+  founded_year: >= YYYY [if ICP specifies]
 
 PEOPLE SEARCH (per company)
-  current_title: like "Founder" OR like "CTO" OR like "Head of Growth"
-  current_company_industry: in ["[typeahead-resolved]"]
-  current_company_size: in ["2-10", "11-50", "51-200"]
-  profile_country: in [XX, XX, XX]
+  current_title: like "[title 1]" OR like "[title 2]" OR like "[title 3]"
+  current_company_industry: in ["[Capitalized Industry]"]
+  current_company_size: in ["2-10", "11-50", ...]
+  profile_country: in [XX, XX]
   is_currently_employed: = true
 
-KEYWORD ROTATION POOL (one per session):
-  Session 1: "AI agent"
-  Session 2: "sales automation"
-  Session 3: "outreach automation"
-  Session 4: "revenue automation"
-  Session 5: "growth automation"
+KEYWORD ROTATION POOL (ICP-derived, 1 per session):
+  [keyword 1], [keyword 2], [keyword 3], [keyword 4], [keyword 5]
 ═══════════════════════════════════════════
 ```
 
