@@ -23,7 +23,10 @@ Follow phases in strict order. Never skip the demo. Never ask for tool setup bef
 
 When the user runs `/lead-engine [URL or description]`:
 
-1. Immediately fetch and analyze the provided URL (or ask "What's your product or website?" if no args)
+1. Detect input type:
+   - **No argument** → ask: "What's your product or website? (URL or a quick description works)"
+   - **URL detected** (starts with http/https or contains a domain pattern) → fetch and analyze the page
+   - **Text description** → skip fetch entirely, analyze the description directly as product context
 2. Extract: product description, value proposition, target audience signals, business model (B2B/B2C), use cases
 3. Build and display a rich ICP (see ICP Framework below)
 4. Generate 5 fictional-but-realistic sample prospect profiles that match the ICP
@@ -285,8 +288,6 @@ TIER 3 — Activate when ICP has strong vertical signals
 
 **Start with Tier 1 + all available Tier 2. Iterate from there.**
 
-**Anti-collapse rule:** if adding `industry` drops results by > 80%, remove it — categories alone is sufficient.
-
 **Volume guide from live tests:**
 - 4 filters (categories + size + geo + funded) → typically 100-300 results, too broad, lots of noise
 - 6 filters (+ industry + keyword) → typically 8-40 results, high quality, may need loosening
@@ -295,7 +296,7 @@ TIER 3 — Activate when ICP has strong vertical signals
 
 ---
 
-#### Step 5 — Build the maximum-filter people search
+#### Step 5 — Build the maximum-filter people search (Path A complement)
 
 Same philosophy — stack every available people filter from the ICP:
 
@@ -324,7 +325,7 @@ TIER 3 — Activate when ICP has strong persona signals
 
 ---
 
-#### Step 5 — Calibration loop
+#### Step 6 — Calibration loop
 
 Run → check result count → adjust:
 
@@ -351,11 +352,13 @@ Target: 20-60 companies (to qualify down to 20 leads)
 
 Max 3 iterations in either direction. If you can't reach 20+ after 3 loosening attempts,
 split into two separate searches with different keywords and merge the results.
+
+**Anti-collapse rule:** if adding `industry` drops results by > 80% vs without it, remove it — `categories` alone is sufficient for vertical targeting. Apply this check on every iteration where `industry` is active.
 ```
 
 ---
 
-#### Step 6 — Build keyword rotation pool from ICP
+#### Step 7 — Build keyword rotation pool from ICP
 
 Generate 5 keywords ordered from simplest to most specific. Start with the simplest — it gives the largest pool. Use more specific keywords in later sessions to surface different subsets.
 
@@ -458,8 +461,10 @@ Use exactly two search paths. Run both silently — only show the final scored l
 
 **Path B — Profile first, then company verification**
 
+Cap: process a maximum of **25 profiles** in Path B per session. If the people search returns more, take the 25 highest-seniority matches.
+
 1. Run a people search directly with title + industry + country + funding filters
-2. For each profile returned:
+2. For each profile returned (up to 25):
    - Pull their current company context (size, funding, industry) from the profile data
    - Verify the company matches ICP criteria (size range, funding stage, geography)
    - Then always run a secondary check: **search all profiles at this company** using `current_company_id` with the ICP title filters
@@ -671,11 +676,18 @@ After Phase 5, append all sent leads to `leads.csv` in the current directory.
 
 Columns:
 ```
-Date | Name | Title | Company | Country | Profile URL | Fit Score | Website Verdict | ICP Match Reason | Status | Message Sent
+Date | Name | Title | Company | Country | Profile URL | Fit Score | Website Verdict | ICP Match Reason | Status | Message Sent | Keyword Used | Filters Applied
 ```
 
 - Status = "Connection Sent"
 - Message Sent = empty (filled after acceptance)
+- Keyword Used = the keyword used for the company search this session (e.g. "hiring")
+- Filters Applied = pipe-separated list of active filters used to find this prospect (e.g. `categories:recruitment|size:11-50|country:FR|stage:series_a`)
+
+**Deduplication rules — apply before appending:**
+1. Check by `Profile URL` — if already present, skip (same person)
+2. Check by `Company` — if same company already has a row with Status ≠ "Disqualified", skip (one active lead per company at a time)
+3. Log skipped duplicates silently — do not show to user unless > 5 skipped in one session (then mention count in summary)
 
 If file doesn't exist: create it with headers first.
 
