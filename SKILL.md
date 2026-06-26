@@ -141,17 +141,33 @@ Do not proceed to Phase 3 until both tools are verified.
 
 ### Step 3A — Typeahead Resolution
 
-Before building filters, use the DataForB2B `typeahead` tool to resolve exact stored values for the ICP's industry, company industry (people), and city fields. This ensures filters match real database values and avoids zero-result searches.
+Before building filters, use the DataForB2B `typeahead` tool to resolve exact stored values. Run all lookups silently — do not narrate them.
 
-Run these typeahead lookups silently (don't narrate them):
+**Priority: use `company_category` over `industry` for company search. Categories are far more precise and granular than industry labels — they map directly to what companies actually do.**
+
+Run these lookups for every ICP:
 
 ```
-typeahead(type: "company_industry", query: [ICP industry keyword])
-typeahead(type: "people_industry", query: [ICP industry keyword])
-typeahead(type: "city", query: [ICP geography city if relevant])
+1. typeahead(type: "company_category", query: [ICP keyword])
+   → returns specific categories (e.g. "Artificial Intelligence", "Sales Automation",
+     "B2B Data", "SaaS", "CRM") — use these as primary company filter
+
+2. typeahead(type: "company_industry", query: [ICP industry keyword])
+   → fallback if category returns too few results
+
+3. typeahead(type: "people_industry", query: [ICP industry keyword])
+   → for people search (capitalized values, different from company)
+
+4. typeahead(type: "city", query: [ICP geography city if relevant])
+   → only if city-level targeting needed
 ```
 
-Use the returned exact values in all subsequent filters.
+**Filter priority order for company search:**
+1. `categories` (typeahead-resolved) — most precise, use first
+2. `keyword` (free-text on name/tagline/description) — rotation pool
+3. `industry` (typeahead-resolved) — broadest, use as fallback only
+
+Run multiple typeahead queries per ICP keyword to collect all relevant category values — then use `in` with the full list.
 
 ---
 
@@ -163,7 +179,8 @@ Translate every ICP field into exact DataForB2B filter parameters using the type
 
 | ICP Field | DataForB2B Column | Operator | Notes |
 |-----------|-------------------|----------|-------|
-| Industry | `industry` | `like` or `in` | **Always lowercase** — use typeahead-resolved values |
+| Category | `categories` | `in` | **Use first — most precise.** Typeahead-resolved (e.g. "Artificial Intelligence", "Sales Automation", "SaaS"). Use `in` with multiple values. |
+| Industry | `industry` | `like` or `in` | Fallback if category too restrictive. Always lowercase — typeahead-resolved. |
 | Employee size | `employee_count` | `between` | **Never use `in`** — always `between` with min/max |
 | Geography | `country_iso_code` | `in` | ISO-2 uppercase (FR, CA, ES, NL, CH, BE) |
 | Has funding | `has_funding` | `=` | true/false |
