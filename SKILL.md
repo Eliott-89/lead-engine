@@ -697,20 +697,45 @@ Triggered automatically when webhook detects an `accepted_invitation` event:
 
 ## PHASE 8 — Daily Automation (Cowork Scheduling)
 
-After the first successful run, offer to automate everything.
+After the first successful run, offer to automate. Do NOT create any scheduled task yourself — give the user the exact steps to do it manually in Cowork.
 
 Say:
-> **"Want this to run automatically every morning? Here's how to set it up in Cowork in 3 steps."**
+> **"Want this to run automatically every morning? Here's exactly how to set it up — takes 3 minutes."**
 
-### How to install Lead Engine on Cowork
+### How to set up Lead Engine on Cowork
 
-> 1. Download the ZIP from **[dataforb2b.ai](https://dataforb2b.ai)** → Skills section
-> 2. In Cowork → **Skills → Create a skill → Upload a skill** → upload the **ZIP file** (not a folder, not individual files — the ZIP directly)
-> 3. Once installed, create a scheduled task:
->    - **Schedule:** Monday–Friday, 9:00 AM
->    - **Prompt:** `/lead-engine`
->    - **Cap:** 20 connection requests/day
->    - **Stop condition:** checkpoint detected → pause 24h
+Show this to the user verbatim:
+
+```
+─────────────────────────────────────────────
+COWORK SETUP — 3 steps
+─────────────────────────────────────────────
+
+STEP 1 — Install the skill
+  1. Go to dataforb2b.ai → Skills section
+  2. Download the Lead Engine ZIP
+  3. In Cowork → Skills → Create a skill
+     → Upload a skill → select the ZIP file
+     (ZIP only — not a folder, not individual files)
+
+STEP 2 — Check your tools are connected
+  In Cowork → Settings → Connectors, confirm both are active:
+  ✅ DataForB2B
+  ✅ LinkupAPI
+
+STEP 3 — Create the scheduled task
+  In Cowork → Routines → New routine:
+  · Name:     Lead Engine Daily
+  · Schedule: Monday–Friday at 9:00 AM
+  · Prompt:   /lead-engine [your website URL]
+
+  That's it. Lead Engine runs every weekday morning,
+  finds 20 leads, sends connection requests, and logs
+  everything to leads.csv automatically.
+─────────────────────────────────────────────
+```
+
+Do not use any tool to create the scheduled task. Do not call any Cowork API. Just display the instructions above and let the user configure it themselves.
 
 ---
 
