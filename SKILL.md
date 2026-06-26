@@ -162,12 +162,27 @@ Run these lookups for every ICP:
    → only if city-level targeting needed
 ```
 
-**Filter priority order for company search:**
-1. `categories` (typeahead-resolved) — most precise, use first
-2. `keyword` (free-text on name/tagline/description) — rotation pool
-3. `industry` (typeahead-resolved) — broadest, use as fallback only
+**Proven filter combination (tested):**
 
-Run multiple typeahead queries per ICP keyword to collect all relevant category values — then use `in` with the full list.
+`categories` alone is too broad — "artificial intelligence" includes mining, cosmetics, marine robotics. The winning combination is always **`categories` + `keyword` together**:
+
+```
+categories: in ["artificial intelligence (ai)", "sales automation",
+                "ai automation", "b2b saas", "b2b sales"]   ← reduces pool
+keyword: like "[ICP use case]"                               ← targets exact usage
+founded_year: >= 2018
+employee_count: between 5 200
+has_funding: = true
+```
+
+`keyword` is the most discriminating filter — it searches the company's actual description text. It's what separates a generic AI company from one that does outreach/prospecting/sales automation.
+
+**Filter priority:**
+1. `categories` (typeahead-resolved, specific combos) + `keyword` — primary, always combine both
+2. `industry` — fallback only if category+keyword returns < 15 results
+3. Never use `categories` alone — pool is too large and off-topic companies slip in
+
+Run typeahead on `category` for multiple ICP-related terms, pick the 3-5 most specific values, combine with `keyword` rotation.
 
 ---
 
