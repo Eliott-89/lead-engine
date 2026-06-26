@@ -220,7 +220,37 @@ Before building filters, decide how to use `industry` — its role depends on th
 
 **Never combine `categories` vertical + `industry` vertical together** — both filter the same dimension and collapse the pool. Pick one for vertical targeting, use the other for company type.
 
-**Keyword must be simple, common words** — not jargon. "hiring" (appears in thousands of descriptions) >> "talent acquisition" (rare). Test: would this word appear naturally in a 3-line company description? If not, pick a simpler synonym.
+---
+
+#### The keyword is the most sensitive lever — pick it carefully
+
+Keyword searches the full company description text. The simpler and more common the word, the more it appears in descriptions, the bigger the pool.
+
+**Tested results (legal tech ICP):**
+- `keyword: like "legal"` → 31 results ✅ (appears in nearly every legal tech company's description)
+- `keyword: like "contract"` → 8 results (specific but rare in descriptions)
+- `keyword: like "talent acquisition"` → 2 results ❌ (jargon, rarely written verbatim)
+
+**Rule:** prefer the shortest, most natural word that describes the vertical. Rotate synonyms across sessions to surface different subsets of the pool.
+
+- Session 1: the vertical noun ("legal", "hiring", "invoice", "lease")
+- Session 2: the product category ("contract", "compliance", "recruitment", "payment")
+- Session 3: the specific use case ("CLM", "ATS", "billing", "workflow")
+
+---
+
+#### There is no magic filter combination — you must iterate
+
+No single filter set works perfectly for every ICP. The right combination depends on how companies in that vertical self-describe in their profiles, which is something you discover through testing. The process is always:
+
+1. Start with categories + keyword + geography + size + funding (5-6 filters)
+2. Check result count and quality
+3. If too broad → add `industry: "software development"` to eliminate non-tech players, or narrow the keyword, or add `founded_year`
+4. If too narrow → drop one filter at a time, or switch to a simpler keyword, or add countries
+5. Repeat until the pool is 20-60 companies of genuine quality
+6. Remember what worked — reuse the same config next session, rotate only the keyword
+
+The iteration happens silently and fast (seconds per query). Never show the user intermediate attempts — only show the final validated filter set and results.
 
 ---
 
@@ -233,7 +263,7 @@ Stack **every available filter** that the ICP supports. The default is to use al
 ```
 TIER 1 — Always on (non-negotiable)
   categories: in [typeahead-resolved, 3-5 specific values]   ← vertical
-  keyword: like [simple common word — what companies in this space do]
+  keyword: like [shortest natural word for the vertical — see keyword rule above]
   industry: like [role depends on Case A/B above — software development OR vertical]
   employee_count: between [min] [max]                        ← never use `in`
   country_iso_code: in [ISO-2 list]                          ← geography
@@ -253,13 +283,19 @@ TIER 3 — Activate when ICP has strong vertical signals
   technology: in [tech stack signals]      ← if ICP targets users of specific tools
 ```
 
-**Rule:** start with Tier 1 + all available Tier 2. If results < 15 → drop one Tier 2 filter (least specific first). If results > 200 → add more Tier 2/3 filters to tighten.
+**Start with Tier 1 + all available Tier 2. Iterate from there.**
 
-**Anti-collapse rule:** if adding `industry` drops results by > 80%, remove it — categories alone is sufficient for the vertical signal.
+**Anti-collapse rule:** if adding `industry` drops results by > 80%, remove it — categories alone is sufficient.
+
+**Volume guide from live tests:**
+- 4 filters (categories + size + geo + funded) → typically 100-300 results, too broad, lots of noise
+- 6 filters (+ industry + keyword) → typically 8-40 results, high quality, may need loosening
+- 7-8 filters (+ stage + founded_year) → typically 5-20 results, very precise
+- If < 15 after 7+ filters → switch to simpler keyword first before dropping structural filters
 
 ---
 
-#### Step 4 — Build the maximum-filter people search
+#### Step 5 — Build the maximum-filter people search
 
 Same philosophy — stack every available people filter from the ICP:
 
@@ -293,44 +329,49 @@ TIER 3 — Activate when ICP has strong persona signals
 Run → check result count → adjust:
 
 ```
-Target: 30-60 companies (to qualify down to 20)
+Target: 20-60 companies (to qualify down to 20 leads)
 
-< 15 results  → loosen in this order:
-  1. Widen employee_count range (+50 each side)
-  2. Add one country to country_iso_code
-  3. Drop employee_growth filter
+< 15 results  → loosen in this order (try one at a time, recheck after each):
+  1. Switch to a simpler/shorter keyword (most common fix)
+  2. Add one or two countries
+  3. Widen employee_count range (+50 each side)
   4. Drop last_funding_date filter
-  5. Switch from categories+industry to categories only
+  5. Drop employee_growth filter
+  6. Remove industry filter (keep categories only)
+  → Stop loosening when you hit 20+ results
 
 > 200 results → tighten in this order:
-  1. Add last_funding_date (last 18 months)
-  2. Add employee_growth_6m > 10
-  3. Narrow founded_year (more recent)
-  4. Add actively_hiring = true
-  5. Use more specific keyword (narrower synonym)
+  1. Add industry: "software development" if not already set (Case A ICP)
+  2. Use a more specific keyword (narrower synonym)
+  3. Add last_funding_date (last 18 months)
+  4. Add founded_year >= 2019
+  5. Add employee_growth_6m > 10
+  6. Add actively_hiring = true
+  → Stop tightening when below 100 results
 
-Max 2 iterations in either direction.
+Max 3 iterations in either direction. If you can't reach 20+ after 3 loosening attempts,
+split into two separate searches with different keywords and merge the results.
 ```
 
 ---
 
 #### Step 6 — Build keyword rotation pool from ICP
 
-Generate 5 keywords from the ICP use case — what the target company actually does, not what they are. Rotate one per session.
+Generate 5 keywords ordered from simplest to most specific. Start with the simplest — it gives the largest pool. Use more specific keywords in later sessions to surface different subsets.
 
 ```
-Derive from:
-  - ICP pain point ("what friction does this product remove?")
-  - ICP buying trigger ("what event makes them need it now?")
-  - Adjacent synonyms for the use case
+Keyword order: broad noun → category noun → specific use case → acronym/jargon → buying trigger
 
-Examples by vertical:
-  HR tech:     "talent acquisition" / "recruitment automation" / "ATS" / "onboarding" / "people ops"
-  Legal tech:  "contract management" / "legal ops" / "compliance workflow" / "NDA automation" / "matter management"
-  Sales tech:  "outbound automation" / "lead enrichment" / "revenue operations" / "cold outreach" / "prospecting"
-  Fintech:     "expense management" / "invoice automation" / "payment reconciliation" / "treasury" / "AP automation"
-  Proptech:    "property management" / "lease automation" / "tenant experience" / "facility management" / "real estate ops"
+Tested examples by vertical (ordered broad → specific):
+  HR tech:     "hiring" → "recruitment" → "ATS" → "talent acquisition" → "onboarding"
+  Legal tech:  "legal" → "contract" → "CLM" → "compliance" → "legal ops"
+  Sales tech:  "sales" → "outbound" → "prospecting" → "lead enrichment" → "revenue operations"
+  Fintech:     "payment" → "invoice" → "expense" → "treasury" → "AP automation"
+  Proptech:    "property" → "lease" → "tenant" → "facility" → "real estate ops"
+  E-commerce:  "ecommerce" → "inventory" → "fulfillment" → "returns" → "order management"
 ```
+
+Session 1 always uses the broadest keyword. Narrow progressively across sessions.
 
 One keyword per session. Never reuse in the same week.
 
