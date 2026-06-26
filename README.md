@@ -63,7 +63,7 @@ You'll need accounts on these platforms — Lead Engine guides you through setup
 ## Powered by
 
 - [DataForB2B](https://dataforb2b.ai) — B2B data API
-- [LinkupAPI](https://linkupapi.com) — LinkedIn automation API
+- [LinkupAPI](https://linkupapi.com) —  Engagement API
 
 ---
 
